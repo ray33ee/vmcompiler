@@ -15,4 +15,16 @@ public class Jumps {
     
     public String _label;
     
+    public Jumps(int pos, String label)
+    {
+        this._position = pos;
+        this._label = label;
+    }
+    
+    @Override
+    public String toString()
+    {
+        return "{" + this._position + ", " + this._label + "}";
+    }
+    
 }

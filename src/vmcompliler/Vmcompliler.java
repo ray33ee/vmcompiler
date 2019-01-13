@@ -54,7 +54,6 @@ public class Vmcompliler {
     
     static
     {
-        
         BYTECODE_TABLE = new HashMap<>(90);
         
         /* Zero argument instructions */
@@ -278,9 +277,14 @@ public class Vmcompliler {
      */
     public static String[] getArgs(String command, String line)
     {
-        String s = line.split(command + "\\s*")[1]; //Get string after command (instruction/identifier)
+        String s = line.replaceAll("\\s", ""); //Remove whitespace
         
-        s = s.replaceAll("\\s", ""); //Remove whitespace
+        if (command.equals(s))
+        {
+            return new String[0];
+        }
+        
+        s = s.split(command + "\\s*")[1]; //Get string after command (instruction/identifier)
         
         String[] args = ARGS_DELIM_REG.split(s); //Separate by comma  
         
@@ -314,8 +318,6 @@ public class Vmcompliler {
         else
             return "i";
     }
-    
-    
     
     /**
      * Get the single char from the string representation of the type.
@@ -353,6 +355,16 @@ public class Vmcompliler {
             return "_l" + type;
     }
     
+    /**
+     * Determines whether an instruction is a jump or not
+     * @param bytecode the instruction to test
+     * @return true if the instruction is a jump
+     */
+    public static boolean isJump(int bytecode)
+    {
+        return bytecode >= 0x0100 && bytecode < 0x0105;
+    }
+    
     //It was around here I realised why I hate java...
     /**
      * Perform 2's complement on negative values to convert from signed to unsigned
@@ -366,7 +378,13 @@ public class Vmcompliler {
         return val & 0xff; //Shave off overflow bit
     }
     
-    //I hate that this could have been done in one line in C - return *(int*)&number //fml
+    /**
+     * Convert float to int. This is done by converting a float to an
+     * array of bytes, then combines them into an int. 
+     * Equivalent to 'return *(int*)&number' in C.
+     * @param number
+     * @return 
+     */
     public static int floatToInt(float number)
     {
         byte[] arr = ByteBuffer.allocate(4).putFloat(number).array();
@@ -374,12 +392,27 @@ public class Vmcompliler {
     }
     
     /**
+     * Converts the list of bytecodes into a formatted hex string.
+     * @param binary list of bytecodes
+     * @return string representation of final code
+     */
+    public static String display(ArrayList<Integer> binary)
+    {
+        String format = "0x%08X";
+        String ans = "[";
+        
+        for (int i = 0; i < binary.size() - 1; ++i)
+            ans += String.format(format, binary.get(i)) + ", ";
+        
+        ans += String.format(format, binary.get(binary.size() - 1)) + "]";
+        
+        return ans;
+    }
+    
+    /**
      * @param args the command line arguments
      */
     public static void main(String[] args) throws IOException {
-        // TODO code application logic here
-        
-        System.out.println("Int: " + String.format("0x%x", floatToInt(1.234f)));
         
         BufferedReader buff;
         FileReader reader;
@@ -398,8 +431,8 @@ public class Vmcompliler {
         
         buff = new BufferedReader(reader);
         
-        HashMap<String, Integer> addressTable = new HashMap<>(20);
-        ArrayList<Jumps> locationTable = new ArrayList<>(40); //The location of the jump address to the string
+        HashMap<String, Integer> addressTable = new HashMap<>(20); //Mapping label strings to corresponding position
+        ArrayList<Jumps> locationTable = new ArrayList<>(40); //Maps the location of the jump address to the string
         
         ArrayList<Integer> binary = new ArrayList(); //List of opcodes
         
@@ -454,7 +487,7 @@ public class Vmcompliler {
                 
                 addressTable.put(label, wordCount);
                 
-                System.out.println("Label: " + getLabel(line));
+                System.out.println("Label:       " + getLabel(line));
                 continue;
             }
             
@@ -478,11 +511,12 @@ public class Vmcompliler {
                 
                 binary.add(bytecode);
                 
-                System.out.println("code: " + bytecode);
                 
-                if (bytecode >= 0x0100 && bytecode < 0x0105)
+                if (isJump(bytecode)) //If the instruction is a jump, add a placeholder argument which will be filled on the second parse
                 {
-                    binary.add(0x5050c0c0);                    
+                    binary.add(0x0);   
+
+                    locationTable.add(new Jumps(wordCount + 1, arguments[0]));
                 }
                 else
                 {
@@ -490,33 +524,43 @@ public class Vmcompliler {
                     {
                         String type = getType(arguments[i]);
 
-                        if (type.equals("v"))
-                        {
-                            binary.add(getVarIndex(arguments[i]));
-                        }
-                        else if (type.equals("i"))
-                        {
-                            binary.add(Integer.parseInt(arguments[i]));
-                        }
-                        else if (type.equals("f"))
-                        {
-                            binary.add(floatToInt(Float.parseFloat(arguments[i])));
+                        switch (type) {
+                            case "v":
+                                binary.add(getVarIndex(arguments[i]));
+                                break;
+                            case "i":
+                                binary.add(Integer.parseInt(arguments[i]));
+                                break;
+                            case "f":
+                                binary.add(floatToInt(Float.parseFloat(arguments[i])));
+                                break;
+                            default:
+                                break;
                         }
                     }
                 }
-                /*if (bytecode >= 0x0100 && bytecode < 0x0105)
-                {
-                    
-                }*/
-                
                 wordCount += (arguments.length + 1);
+                System.out.println("Command:     " + signature + ", bytecode: " + String.format("0x%x", bytecode) + ", Size: " + (arguments.length + 1));
                 
-                System.out.println("Command: " + signature + ", bytecode: " + String.format("0x%x", bytecode) + ", Size: " + (arguments.length + 1));
             }
             
         }
         
-        System.out.println(binary);
+        System.out.println(locationTable);
+        
+        //Through all of locationTable and fill jump addresses
+        for (int i = 0; i < locationTable.size(); ++i)
+        {
+            String label = locationTable.get(i)._label;
+            if (!addressTable.containsKey(label))
+            {
+                System.out.println("ERROR: Cannot find label " + label + ".");
+                return;
+            }
+            binary.set(locationTable.get(i)._position, addressTable.get(label));
+        }
+        
+        System.out.println(display(binary));
             
         reader.close();
     }
