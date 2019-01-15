@@ -1,17 +1,42 @@
 
-.define pi 3.1415927
 
-.define e 2.7
 
-.define i 1i
+.define x $1
 
-float $2
+.define y $2
 
-float $3
+.define ans $3
 
-start:
-    add   $3 , $2, pi   # ignore this
-    nop
-    external 1
-useless_label:
-    jmp start
+.define i $4
+
+.define geo $5
+
+.define width 100
+
+.define r 1.1
+
+int x
+
+int y
+
+int ans
+
+int i
+
+float geo
+
+    mul ans, y, width
+
+    add ans, ans, x  # ans now contains y * width + x
+
+    store i, 100
+
+    store geo, r
+
+for_start:
+
+    dec i
+
+    mul geo, geo, r
+
+    jne for_start

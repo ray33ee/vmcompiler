@@ -1,3 +1,9 @@
+Version 1.0.6
+    - Signature and bytecode hashmap now populated from xml document
+    - XML document now integrated as a resource
+    - Define directive now works in declarations
+    - Define directive implemented on individual arguments, not argument list
+
 Version 1.0.5
     - gitignore updated
     - Project name corrected

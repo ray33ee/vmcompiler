@@ -1,0 +1,495 @@
+<?xml version = "1.0"?>
+<Class>
+    <Type> 
+        <Signature>vector</Signature>
+        <Short>v</Short>
+    </Type>
+    
+    
+    
+        <Cluster arg_count = "0">
+                <Instruction>
+                        <Signature>nop</Signature>
+                        <Bytecode>0000</Bytecode>
+                </Instruction>
+
+                <Instruction>
+                        <Signature>halt</Signature>
+                        <Bytecode>0001</Bytecode>
+                </Instruction>
+         
+                <Instruction>
+                        <Signature>ret</Signature>
+                        <Bytecode>0002</Bytecode>
+                </Instruction>
+        </Cluster>
+        
+        <Cluster arg_count = "1">
+                <Instruction>
+                        <Signature>jmp_li</Signature>
+                        <Bytecode>0100</Bytecode>
+                </Instruction>
+
+                <Instruction>
+                        <Signature>je_li</Signature>
+                        <Bytecode>0101</Bytecode>
+                </Instruction>
+
+                <Instruction>
+                        <Signature>jne_li</Signature>
+                        <Bytecode>0102</Bytecode>
+                </Instruction>
+
+                <Instruction>
+                        <Signature>jl_li</Signature>
+                        <Bytecode>0103</Bytecode>
+                </Instruction>
+
+                <Instruction>
+                        <Signature>jle_li</Signature>
+                        <Bytecode>0104</Bytecode>
+                </Instruction>
+
+                
+                <Instruction>
+                        <Signature>external_li</Signature>
+                        <Bytecode>0105</Bytecode>
+                </Instruction>
+
+                <Instruction>
+                        <Signature>elapsed_vi</Signature>
+                        <Bytecode>0106</Bytecode>
+                </Instruction>
+
+                
+                <Instruction>
+                        <Signature>dec_vi</Signature>
+                        <Bytecode>0107</Bytecode>
+                </Instruction>
+
+                <Instruction>
+                        <Signature>inc_vi</Signature>
+                        <Bytecode>0108</Bytecode>
+                </Instruction>
+
+               
+                <Instruction>
+                        <Signature>random_vi</Signature>
+                        <Bytecode>0109</Bytecode>
+                </Instruction>
+
+                <Instruction>
+                        <Signature>random_vf</Signature>
+                        <Bytecode>010A</Bytecode>
+                </Instruction>
+
+                <Instruction>
+                        <Signature>random_vv</Signature>
+                        <Bytecode>010B</Bytecode>
+                </Instruction>
+
+                
+                <Instruction>
+                        <Signature>peek_vi</Signature>
+                        <Bytecode>010C</Bytecode>
+                </Instruction>
+
+                <Instruction>
+                        <Signature>peek_vf</Signature>
+                        <Bytecode>010C</Bytecode>
+                </Instruction>
+
+                <Instruction>
+                        <Signature>peek_vv</Signature>
+                        <Bytecode>010C</Bytecode>
+                </Instruction>
+
+                
+                <Instruction>
+                        <Signature>push_vi</Signature>
+                        <Bytecode>010D</Bytecode>
+                </Instruction>
+         
+                <Instruction>
+                        <Signature>push_vf</Signature>
+                        <Bytecode>010D</Bytecode>
+                </Instruction>
+
+                <Instruction>
+                        <Signature>push_vv</Signature>
+                        <Bytecode>010D</Bytecode>
+                </Instruction>
+
+                
+                <Instruction>
+                        <Signature>push_li</Signature>
+                        <Bytecode>010E</Bytecode>
+                </Instruction>
+         
+                <Instruction>
+                        <Signature>push_lf</Signature>
+                        <Bytecode>010E</Bytecode>
+                </Instruction>
+
+                
+                <Instruction>
+                        <Signature>pop_vi</Signature>
+                        <Bytecode>010F</Bytecode>
+                </Instruction>
+         
+                <Instruction>
+                        <Signature>pop_vf</Signature>
+                        <Bytecode>010F</Bytecode>
+                </Instruction>
+
+                <Instruction>
+                        <Signature>pop_vv</Signature>
+                        <Bytecode>010F</Bytecode>
+                </Instruction>
+
+                
+                <Instruction>
+                        <Signature>start_vi</Signature>
+                        <Bytecode>0110</Bytecode>
+                </Instruction>
+        </Cluster>
+        
+        <Cluster arg_count = "2">
+                <Instruction>
+                        <Signature>sin_vf_vf</Signature>
+                        <Bytecode>0200</Bytecode>
+                </Instruction>
+
+                <Instruction>
+                        <Signature>cos_vf_vf</Signature>
+                        <Bytecode>0201</Bytecode>
+                </Instruction>
+
+                <Instruction>
+                        <Signature>tan_vf_vf</Signature>
+                        <Bytecode>0202</Bytecode>
+                </Instruction>
+
+                
+                <Instruction>
+                        <Signature>abs_vi_vi</Signature>
+                        <Bytecode>0203</Bytecode>
+                </Instruction>
+
+                <Instruction>
+                        <Signature>abs_vf_vf</Signature>
+                        <Bytecode>0204</Bytecode>
+                </Instruction>
+
+                
+                <Instruction>
+                        <Signature>norm_vi_vi</Signature>
+                        <Bytecode>0205</Bytecode>
+                </Instruction>
+
+                <Instruction>
+                        <Signature>norm_vf_vf</Signature>
+                        <Bytecode>0206</Bytecode>
+                </Instruction>
+
+                
+                <Instruction>
+                        <Signature>ln_vf_vf</Signature>
+                        <Bytecode>0207</Bytecode>
+                </Instruction>
+
+                <Instruction>
+                        <Signature>exp_vf_vf</Signature>
+                        <Bytecode>0208</Bytecode>
+                </Instruction>
+
+                <Instruction>
+                        <Signature>floor_vf_vf</Signature>
+                        <Bytecode>0209</Bytecode>
+                </Instruction>
+
+                <Instruction>
+                        <Signature>ceil_vf_vf</Signature>
+                        <Bytecode>020A</Bytecode>
+                </Instruction>
+
+                <Instruction>
+                        <Signature>sqrt_vf_vf</Signature>
+                        <Bytecode>020B</Bytecode>
+                </Instruction>
+
+                <Instruction>
+                        <Signature>neg_vf_vf</Signature>
+                        <Bytecode>020C</Bytecode>
+                </Instruction>
+
+                
+                
+                <Instruction>
+                        <Signature>store_vi_li</Signature>
+                        <Bytecode>0240</Bytecode>
+                </Instruction>
+
+                <Instruction>
+                        <Signature>store_vi_lf</Signature>
+                        <Bytecode>0241</Bytecode>
+                </Instruction>
+
+                
+                <Instruction>
+                        <Signature>store_vi_vi</Signature>
+                        <Bytecode>0242</Bytecode>
+                </Instruction>
+
+                <Instruction>
+                        <Signature>store_vi_vf</Signature>
+                        <Bytecode>0243</Bytecode>
+                </Instruction>
+
+                <Instruction>
+                        <Signature>store_vf_vi</Signature>
+                        <Bytecode>0244</Bytecode>
+                </Instruction>
+
+                <Instruction>
+                        <Signature>store_vf_vf</Signature>
+                        <Bytecode>0245</Bytecode>
+                </Instruction>
+
+                <Instruction>
+                        <Signature>store_vi_li</Signature>
+                        <Bytecode>0246</Bytecode>
+                </Instruction>
+
+                <Instruction>
+                        <Signature>store_vf_lf</Signature>
+                        <Bytecode>0247</Bytecode>
+                </Instruction>
+
+                
+                <Instruction>
+                        <Signature>store_v*_p</Signature>
+                        <Bytecode>0242</Bytecode>
+                </Instruction>
+
+                
+                <Instruction>
+                        <Signature>test_vv_vv</Signature>
+                        <Bytecode>0249</Bytecode>
+                </Instruction>
+
+                
+                <Instruction>
+                        <Signature>cmp_vi_vi</Signature>
+                        <Bytecode>024A</Bytecode>
+                </Instruction>
+
+                <Instruction>
+                        <Signature>cmp_vi_vf</Signature>
+                        <Bytecode>024B</Bytecode>
+                </Instruction>
+
+                <Instruction>
+                        <Signature>cmp_vf_vi</Signature>
+                        <Bytecode>024C</Bytecode>
+                </Instruction>
+
+                <Instruction>
+                        <Signature>cmp_vf_vf</Signature>
+                        <Bytecode>024D</Bytecode>
+                </Instruction>
+
+                
+                <Instruction>
+                        <Signature>cmp_vi_li</Signature>
+                        <Bytecode>024E</Bytecode>
+                </Instruction>
+
+                <Instruction>
+                        <Signature>cmp_vf_li</Signature>
+                        <Bytecode>024F</Bytecode>
+                </Instruction>
+
+                <Instruction>
+                        <Signature>cmp_vi_lf</Signature>
+                        <Bytecode>0250</Bytecode>
+                </Instruction>
+
+                <Instruction>
+                        <Signature>cmp_vf_lf</Signature>
+                        <Bytecode>0251</Bytecode>
+                </Instruction>
+
+                
+                <Instruction>
+                        <Signature>stop_vi_vi</Signature>
+                        <Bytecode>0252</Bytecode>
+                </Instruction>
+        </Cluster>
+        
+        
+        <Cluster arg_count = "3">
+                <Instruction>
+                        <Signature>add_vi_vi_vi</Signature>
+                        <Bytecode>0300</Bytecode>
+                </Instruction>
+
+                <Instruction>
+                        <Signature>add_vf_vf_vf</Signature>
+                        <Bytecode>0301</Bytecode>
+                </Instruction>
+
+                <Instruction>
+                        <Signature>add_vv_vv_vv</Signature>
+                        <Bytecode>0302</Bytecode>
+                </Instruction>
+
+                
+                <Instruction>
+                        <Signature>add_vi_vi_li</Signature>
+                        <Bytecode>0303</Bytecode>
+                </Instruction>
+
+                <Instruction>
+                        <Signature>add_vf_vf_lf</Signature>
+                        <Bytecode>0304</Bytecode>
+                </Instruction>
+
+                
+                <Instruction>
+                        <Signature>sub_vi_vi_vi</Signature>
+                        <Bytecode>0305</Bytecode>
+                </Instruction>
+
+                <Instruction>
+                        <Signature>sub_vf_vf_vf</Signature>
+                        <Bytecode>0306</Bytecode>
+                </Instruction>
+
+                <Instruction>
+                        <Signature>sub_vv_vv_vv</Signature>
+                        <Bytecode>0307</Bytecode>
+                </Instruction>
+
+                
+                <Instruction>
+                        <Signature>sub_vi_vi_li</Signature>
+                        <Bytecode>0308</Bytecode>
+                </Instruction>
+
+                <Instruction>
+                        <Signature>sub_vf_vf_lf</Signature>
+                        <Bytecode>0309</Bytecode>
+                </Instruction>
+
+                
+                <Instruction>
+                        <Signature>sub_vi_li_vi</Signature>
+                        <Bytecode>030A</Bytecode>
+                </Instruction>
+
+                <Instruction>
+                        <Signature>sub_vf_lf_vf</Signature>
+                        <Bytecode>030B</Bytecode>
+                </Instruction>
+             
+                
+                <Instruction>
+                        <Signature>mul_vi_vi_vi</Signature>
+                        <Bytecode>030C</Bytecode>
+                </Instruction>
+
+                <Instruction>
+                        <Signature>mul_vf_vf_vf</Signature>
+                        <Bytecode>030D</Bytecode>
+                </Instruction>
+
+                
+                <Instruction>
+                        <Signature>mul_vv_vv_vf</Signature>
+                        <Bytecode>030E</Bytecode>
+                </Instruction>
+
+                <Instruction>
+                        <Signature>mul_vv_vv_lf</Signature>
+                        <Bytecode>030F</Bytecode>
+                </Instruction>
+
+                
+                <Instruction>
+                        <Signature>mul_vi_vi_li</Signature>
+                        <Bytecode>0310</Bytecode>
+                </Instruction>
+
+                <Instruction>
+                        <Signature>mul_vf_vf_lf</Signature>
+                        <Bytecode>0311</Bytecode>
+                </Instruction>
+
+                
+                <Instruction>
+                        <Signature>div_vi_vi_vi</Signature>
+                        <Bytecode>0312</Bytecode>
+                </Instruction>
+
+                <Instruction>
+                        <Signature>div_vi_vi_li</Signature>
+                        <Bytecode>0313</Bytecode>
+                </Instruction>
+
+                <Instruction>
+                        <Signature>div_vi_li_vi</Signature>
+                        <Bytecode>0314</Bytecode>
+                </Instruction>
+
+                
+                <Instruction>
+                        <Signature>div_vf_vf_vf</Signature>
+                        <Bytecode>0315</Bytecode>
+                </Instruction>
+
+                <Instruction>
+                        <Signature>div_vf_vf_lf</Signature>
+                        <Bytecode>0316</Bytecode>
+                </Instruction>
+
+                <Instruction>
+                        <Signature>div_vf_lf_vf</Signature>
+                        <Bytecode>0317</Bytecode>
+                </Instruction>
+
+                
+                <Instruction>
+                        <Signature>div_vv_vv_vf</Signature>
+                        <Bytecode>0318</Bytecode>
+                </Instruction>
+
+                <Instruction>
+                        <Signature>div_vv_vv_lf</Signature>
+                        <Bytecode>0319</Bytecode>
+                </Instruction>
+
+                
+                <Instruction>
+                        <Signature>pow_vf_vf_vf</Signature>
+                        <Bytecode>031A</Bytecode>
+                </Instruction>
+
+                <Instruction>
+                        <Signature>pow_vf_vf_lf</Signature>
+                        <Bytecode>031B</Bytecode>
+                </Instruction>
+
+                <Instruction>
+                        <Signature>pow_vf_lf_vf</Signature>
+                        <Bytecode>031C</Bytecode>
+                </Instruction>
+
+                
+                
+                <Instruction>
+                        <Signature>store_vv_lf_lf</Signature>
+                        <Bytecode>0340</Bytecode>
+                </Instruction>
+        </Cluster>
+</Class>

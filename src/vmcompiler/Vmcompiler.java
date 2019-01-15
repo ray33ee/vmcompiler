@@ -13,6 +13,24 @@ import java.util.Set;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
+import java.io.File;
+import java.net.URI;
+import java.net.URISyntaxException;
+import java.net.URL;
+import java.nio.file.FileSystem;
+import java.nio.file.FileSystems;
+import java.nio.file.Paths;
+import java.util.Map;
+import javax.xml.parsers.DocumentBuilderFactory;
+import javax.xml.parsers.DocumentBuilder;
+import javax.xml.parsers.ParserConfigurationException;
+import org.w3c.dom.DOMException;
+import org.w3c.dom.Document;
+import org.w3c.dom.NodeList;
+import org.w3c.dom.Node;
+import org.w3c.dom.Element;
+import org.xml.sax.SAXException;
+
 /**
  *
  * @author Will
@@ -20,11 +38,12 @@ import java.util.regex.Pattern;
 public class Vmcompiler {
     
     /** Regex to match label declarations */
-    static final Pattern LABEL_REG = Pattern.compile("([a-zA-Z_$])*:"); //Matches label identifiers
+    static final Pattern LABEL_REG = Pattern.compile("([a-zA-Z_])*:"); //Matches label identifiers
     
     /** Regex to match preprocessor directives */
-    static final Pattern DIRECTIVE_REG = Pattern.compile("\\s*(?<=[.])([a-zA-Z_$])*");
+    static final Pattern DIRECTIVE_REG = Pattern.compile("\\s*(?<=[.])([a-zA-Z_])+");
     
+    /** Regex to match preprocessor directive arguments */
     static final Pattern DIRECTIVE_ARG_REG = Pattern.compile("(?<=\\s)([0-9a-zA-Z.e+-_$])*");
     
     /** Regex to match instructions */
@@ -40,13 +59,16 @@ public class Vmcompiler {
     static final Pattern VARIABLE_REG = Pattern.compile("[$]\\d++"); //Matches variables
     
     /** Regex to match type identifiers in variable declarations */
-    static final Pattern IDENTIFIER_REG = Pattern.compile("int|float|vec|ptr|phys"); // Matches variable identifiers
+    static final Pattern IDENTIFIER_REG = Pattern.compile("([a-zA-Z_])+(?=\\s)"); // Matches variable identifiers
     
     /** Regex to match the argument delimiter character, ',' */
     static final Pattern ARGS_DELIM_REG = Pattern.compile(",");
     
     /** Map function signatures to corresponding bytecodes */
     static final HashMap<String, Integer> BYTECODE_TABLE;
+    
+    /** Map long type string (i.e. float) to short type string (i.e. f) */
+    static final HashMap<String, String> TYPE_TABLE;
     
     /** The total number of available registers */
     static final int REGISTER_COUNT = 30;
@@ -57,137 +79,58 @@ public class Vmcompiler {
     static
     {
         BYTECODE_TABLE = new HashMap<>(90);
+        TYPE_TABLE = new HashMap<>(10);
         
-        /* Zero argument instructions */
-        BYTECODE_TABLE.put("nop", 0x0000);
-        BYTECODE_TABLE.put("halt", 0x0001); 
-        BYTECODE_TABLE.put("ret", 0x0002);
+        TYPE_TABLE.put("int", "i");
+        TYPE_TABLE.put("float", "f");
         
-        /* Single argument instruction */
-        BYTECODE_TABLE.put("jmp_li", 0x0100);
-        BYTECODE_TABLE.put("je_li", 0x0101);
-        BYTECODE_TABLE.put("jne_li", 0x0102);
-        BYTECODE_TABLE.put("jl_li", 0x0103);
-        BYTECODE_TABLE.put("jle_li", 0x0104);
-        
-        BYTECODE_TABLE.put("external_li", 0x0105);
-        BYTECODE_TABLE.put("elapsed_vi", 0x0106);
-        
-        BYTECODE_TABLE.put("dec_vi", 0x0107);
-        BYTECODE_TABLE.put("inc_vi", 0x0108);
-       
-        BYTECODE_TABLE.put("random_vi", 0x0109);
-        BYTECODE_TABLE.put("random_vf", 0x010A);
-        BYTECODE_TABLE.put("random_vv", 0x010B);
-        
-        BYTECODE_TABLE.put("peek_vi", 0x010C); //*
-        BYTECODE_TABLE.put("peek_vf", 0x010C);
-        BYTECODE_TABLE.put("peek_vv", 0x010C);
-        
-        BYTECODE_TABLE.put("push_vi", 0x010D); //*
-        BYTECODE_TABLE.put("push_vf", 0x010D);
-        BYTECODE_TABLE.put("push_vv", 0x010D);
-        
-        BYTECODE_TABLE.put("push_li", 0x010E); //*
-        BYTECODE_TABLE.put("push_lf", 0x010E);
-        
-        BYTECODE_TABLE.put("pop_vi", 0x010F); //*
-        BYTECODE_TABLE.put("pop_vf", 0x010F);
-        BYTECODE_TABLE.put("pop_vv", 0x010F);
-        
-        BYTECODE_TABLE.put("start_vi", 0x0110);
-        
-        /* Dual argument math instructions */
-        BYTECODE_TABLE.put("sin_vf_vf", 0x0200);
-        BYTECODE_TABLE.put("cos_vf_vf", 0x0201);
-        BYTECODE_TABLE.put("tan_vf_vf", 0x0202);
-        
-        BYTECODE_TABLE.put("abs_vi_vi", 0x0203);
-        BYTECODE_TABLE.put("abs_vf_vf", 0x0204);
-        
-        BYTECODE_TABLE.put("norm_vi_vi", 0x0205);
-        BYTECODE_TABLE.put("norm_vf_vf", 0x0206);
-        
-        BYTECODE_TABLE.put("ln_vf_vf", 0x0207);
-        BYTECODE_TABLE.put("exp_vf_vf", 0x0208);
-        BYTECODE_TABLE.put("floor_vf_vf", 0x0209);
-        BYTECODE_TABLE.put("ceil_vf_vf", 0x020A);
-        BYTECODE_TABLE.put("sqrt_vf_vf", 0x020B);
-        BYTECODE_TABLE.put("neg_vf_vf", 0x020C);
-        
-        /* Dual argument non-math instructions */
-        BYTECODE_TABLE.put("store_vi_li", 0x0240);
-        BYTECODE_TABLE.put("store_vi_lf", 0x0241);
-        
-        BYTECODE_TABLE.put("store_vi_vi", 0x0242);
-        BYTECODE_TABLE.put("store_vi_vf", 0x0243);
-        BYTECODE_TABLE.put("store_vf_vi", 0x0244);
-        BYTECODE_TABLE.put("store_vf_vf", 0x0245);
-        BYTECODE_TABLE.put("store_vi_ii", 0x0246);
-        BYTECODE_TABLE.put("store_vf_if", 0x0247);
-        
-        BYTECODE_TABLE.put("store_v*_p", 0x0242); //Need to figure out if i really want/need pointers...
-        
-        BYTECODE_TABLE.put("test_vv_vv", 0x0249);
-        
-        BYTECODE_TABLE.put("cmp_vi_vi", 0x024A);
-        BYTECODE_TABLE.put("cmp_vi_vf", 0x024B);
-        BYTECODE_TABLE.put("cmp_vf_vi", 0x024C);
-        BYTECODE_TABLE.put("cmp_vf_vf", 0x024D);
-        
-        BYTECODE_TABLE.put("cmp_vi_li", 0x024E);
-        BYTECODE_TABLE.put("cmp_vf_li", 0x024F);
-        BYTECODE_TABLE.put("cmp_vi_lf", 0x0250);
-        BYTECODE_TABLE.put("cmp_vf_lf", 0x0251);
-        
-        BYTECODE_TABLE.put("stop_vi_vi", 0x0252);
-        
-        /* Triple argument math instructions */
-        BYTECODE_TABLE.put("add_vi_vi_vi", 0x0300); //vari <-- vari + vari
-        BYTECODE_TABLE.put("add_vf_vf_vf", 0x0301); //vari <-- vari + varf
-        BYTECODE_TABLE.put("add_vv_vv_vv", 0x0302); //varv <-- varv + varv
-        
-        BYTECODE_TABLE.put("add_vi_vi_li", 0x0303);
-        BYTECODE_TABLE.put("add_vf_vf_lf", 0x0304);
-        
-        BYTECODE_TABLE.put("sub_vi_vi_vi", 0x0305);
-        BYTECODE_TABLE.put("sub_vf_vf_vf", 0x0306);
-        BYTECODE_TABLE.put("sub_vv_vv_vv", 0x0307);
-        
-        BYTECODE_TABLE.put("sub_vi_vi_li", 0x0308);
-        BYTECODE_TABLE.put("sub_vf_vf_lf", 0x0309);
-        
-        BYTECODE_TABLE.put("sub_vi_li_vi", 0x030A);
-        BYTECODE_TABLE.put("sub_vf_lf_vf", 0x030B);     
-        
-        BYTECODE_TABLE.put("mul_vi_vi_vi", 0x030C);
-        BYTECODE_TABLE.put("mul_vf_vf_vf", 0x030D);
-        
-        BYTECODE_TABLE.put("mul_vv_vv_vf", 0x030E);
-        BYTECODE_TABLE.put("mul_vv_vv_lf", 0x030F);
-        
-        BYTECODE_TABLE.put("mul_vi_vi_li", 0x0310);
-        BYTECODE_TABLE.put("mul_vf_vf_lf", 0x0311);
-        
-        BYTECODE_TABLE.put("div_vi_vi_vi", 0x0312);
-        BYTECODE_TABLE.put("div_vi_vi_li", 0x0313);
-        BYTECODE_TABLE.put("div_vi_li_vi", 0x0314);
-        
-        BYTECODE_TABLE.put("div_vf_vf_vf", 0x0315);
-        BYTECODE_TABLE.put("div_vf_vf_lf", 0x0316);
-        BYTECODE_TABLE.put("div_vf_lf_vf", 0x0317);
-        
-        BYTECODE_TABLE.put("div_vv_vv_vf", 0x0318);
-        BYTECODE_TABLE.put("div_vv_vv_lf", 0x0319);
-        
-        BYTECODE_TABLE.put("pow_vf_vf_vf", 0x031A);
-        BYTECODE_TABLE.put("pow_vf_vf_lf", 0x031B);
-        BYTECODE_TABLE.put("pow_vf_lf_vf", 0x031C);
-        
-        /* Triple argument non-math functions */
-        BYTECODE_TABLE.put("store_vv_lf_lf", 0x0340);
-        
-        
+        try 
+        {
+            InputStream stream = vmcompiler.Vmcompiler.class.getResourceAsStream("bytecodes.xml");
+
+            Document doc = DocumentBuilderFactory.newInstance().newDocumentBuilder().parse(stream);
+            doc.getDocumentElement().normalize();
+
+            NodeList nList = doc.getElementsByTagName("Instruction");
+
+            for (int temp = 0; temp < nList.getLength(); temp++) 
+            {
+                Node nNode = nList.item(temp);
+                
+                if (nNode.getNodeType() == Node.ELEMENT_NODE) 
+                {
+                   Element eElement = (Element) nNode;
+                   
+                   String command = eElement.getElementsByTagName("Signature").item(0).getTextContent();
+                   Integer bytecode = Integer.parseInt(eElement.getElementsByTagName("Bytecode").item(0).getTextContent(), 16);
+                   
+                   BYTECODE_TABLE.put(command, bytecode);
+                }
+            }
+            
+            nList = doc.getElementsByTagName("Type");
+
+            for (int temp = 0; temp < nList.getLength(); temp++) 
+            {
+                Node nNode = nList.item(temp);
+                
+                if (nNode.getNodeType() == Node.ELEMENT_NODE) 
+                {
+                   Element eElement = (Element) nNode;
+                   
+                   String type = eElement.getElementsByTagName("Signature").item(0).getTextContent();
+                   String abvr = eElement.getElementsByTagName("Short").item(0).getTextContent();
+                   
+                   TYPE_TABLE.put(type, abvr);
+                }
+            }
+            
+        } 
+        catch (IOException | NumberFormatException | ParserConfigurationException | DOMException | SAXException e) 
+        {
+            System.out.println("ERROR: Problem while parsing bytecodes.xml " + e.getMessage());
+            System.exit(1);
+        }
     }
     
     /**
@@ -197,7 +140,13 @@ public class Vmcompiler {
      */
     public static boolean isIdentifier(String line)
     {
-        return IDENTIFIER_REG.matcher(line).find();
+        Set<String> values = TYPE_TABLE.keySet();
+        
+        for (String s : values)
+            if (line.contains(s))
+                return true;
+        
+        return false;
     }
     
     /**
@@ -297,27 +246,38 @@ public class Vmcompiler {
      */
     public static String getArgs(String command, String line)
     {
-        String s = line.replaceAll("\\s", ""); //Remove whitespace
+        String argstring = line.replaceAll("\\s", ""); //Remove whitespace
         
-        if (command.equals(s))
+        if (command.equals(argstring))
             return "";
         
-        s = s.split(command + "\\s*")[1]; //Get string after command (instruction/identifier)
+        argstring = argstring.split(command + "\\s*")[1]; //Get string after command (instruction/identifier)
         
-        return s;
+        return argstring;
     }
     
     /**
      * Splits the string of arguments into a list of arguments
      * @param argstring the argument string
+     * @param definitionTable the table used to replace preprocessor .defines
      * @return list of arguments
      */
-    public static String[] splitArgs(String argstring)
+    public static String[] splitArgs(String argstring, HashMap<String, String> definitionTable)
     {
         if (argstring.isEmpty())
             return new String[0];
         
-        return ARGS_DELIM_REG.split(argstring);
+        String[] args = ARGS_DELIM_REG.split(argstring);
+        
+        for (int i = 0; i < args.length; ++i)
+        {
+            if (definitionTable.containsKey(args[i]))
+            {
+                args[i] = definitionTable.get(args[i]);
+            }
+        }
+        
+        return args;
     }
     
     /**
@@ -363,16 +323,7 @@ public class Vmcompiler {
      */
     public static String getCharIdentifier(String identifier)
     {
-        switch (identifier) {
-            case "int":
-                return "i";
-            case "float":
-                return "f";
-            case "vector":
-                return "v";
-            default:
-                return "|";
-        }
+        return TYPE_TABLE.get(identifier);
     }
     
     /**
@@ -491,6 +442,8 @@ public class Vmcompiler {
         
         int wordCount = 0; //Cumulative total number of words used by opcodes, used when addressing labels
         
+        System.out.println("First parse...");
+        
         while (true)
         {
             line = buff.readLine();
@@ -530,7 +483,7 @@ public class Vmcompiler {
                     //Add entry to table. Any ocurence of op1 within command arguments will be replaced with op2
                     definitionTable.put(op1, op2);
                     
-                    System.out.println("Directive:   " + directive + " " + op1 + " " + op2);
+                    System.out.println("    Directive:   " + directive + " " + op1 + " " + op2);
                 }
                 else
                 {
@@ -544,20 +497,32 @@ public class Vmcompiler {
             {
                 String identifier = getIdentifier(line);
                 
+                
+                
+                if (!TYPE_TABLE.containsKey(identifier))
+                {
+                    System.out.println("ERROR: Unrecognised type '" + identifier + "' in line '" + line + "'.");
+                    return;
+                }
+                
                 //Get variable number
-                String[] arguments = splitArgs(getArgs(identifier, line));
+                String[] arguments = splitArgs(getArgs(identifier, line), definitionTable);
                 
                 if (arguments.length != 1) //If the user has displayed too many args 
                 {
-                    System.err.println("ERROR: Too many/few arguments in declaration. Declaration takes exactly one argument.");
+                    System.err.println("ERROR: Too many/few arguments in declaration. Declaration takes exactly one argument. Error in line '" + line + "'.");
                     return;
                 }
                 
                 String variable = arguments[0];
                 
+                /*for (String s : definitionList)
+                    if (variable.contains(s))
+                        variable = variable.replace(s, definitionTable.get(s));*/
+                
                 if (!getType(variable).equals("v")) //If argument supplied is not a variable
                 {
-                    System.err.println("ERROR: Argument must be a variable.");
+                    System.err.println("ERROR: Argument must be a variable in line '" + line + "'.");
                     return;
                 }
                 
@@ -579,7 +544,7 @@ public class Vmcompiler {
                     return;
                 }
                 
-                System.out.println("Declaration: " + identifier + " at register " + index);
+                System.out.println("    Declaration: " + identifier + " at register " + index);
                 
                 typeTable[index] = identifier;
             } 
@@ -589,24 +554,14 @@ public class Vmcompiler {
                 
                 addressTable.put(label, wordCount);
                 
-                System.out.println("Label:       " + getLabel(line));
+                System.out.println("    Label:       " + getLabel(line));
             } 
             else if (isInstruction(line))
             {
                 String instr = getInstruction(line);
                 String argumentString = getArgs(instr, line);
                 
-                
-                for (String s : definitionList)
-                {
-                    if (argumentString.contains(s))
-                    {
-                        argumentString = argumentString.replace(s, definitionTable.get(s));
-                    }
-
-                }
-                
-                String[] arguments = splitArgs(argumentString);
+                String[] arguments = splitArgs(argumentString, definitionTable);
                 
                 String signature = instr; //Add the instruction name to the signature
                 
@@ -647,7 +602,7 @@ public class Vmcompiler {
                 
                 if (usesAddress(bytecode)) //If the instruction is a jump, add a placeholder argument which will be filled on the second parse
                 {
-                    binary.add(0x0);   
+                    binary.add(0xFFFFFFFF);   
 
                     locationTable.add(new Jumps(wordCount + 1, arguments[0]));
                 }
@@ -693,7 +648,7 @@ public class Vmcompiler {
                     }
                 }
                 wordCount += (arguments.length + 1);
-                System.out.println("Command:     " + signature + ", bytecode: " + String.format("0x%x", bytecode) + ", Size: " + (arguments.length + 1));
+                System.out.println("    Command:     " + signature + ", bytecode: " + String.format("0x%x", bytecode) + ", Size: " + (arguments.length + 1));
                 
             }
             
@@ -701,7 +656,10 @@ public class Vmcompiler {
         
         reader.close();
         
-        System.out.println(locationTable);
+        System.out.println("First parse complete, replacing jump labels with addresses...");
+        
+        System.out.println("    Location table: " + locationTable);
+        System.out.println("    Label table: " + addressTable);
         
         //Through all of locationTable and fill jump addresses
         for (int i = 0; i < locationTable.size(); ++i)
@@ -715,7 +673,16 @@ public class Vmcompiler {
             binary.set(locationTable.get(i)._position, addressTable.get(label));
         }
         
-        System.out.println(display(binary));
+        System.out.println("Second parse complete.");
+        
+        OutputStream outStream = new FileOutputStream(".\\code.bin");
+        
+        for (Integer i : binary)
+            outStream.write(ByteBuffer.allocate(4).putInt(i).array());
+        
+        outStream.close();
+        
+        System.out.println("Bytecode output: " + display(binary));
             
     }
     
