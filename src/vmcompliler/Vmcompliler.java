@@ -9,7 +9,7 @@ import java.io.*;
 import java.nio.ByteBuffer;
 import java.util.ArrayList;
 import java.util.HashMap;
-import java.util.Vector;
+import java.util.Set;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
@@ -24,6 +24,11 @@ public class Vmcompliler {
     
     /** Regex to match label declarations */
     static final Pattern LABEL_REG = Pattern.compile("([a-zA-Z_$])*:"); //Matches label identifiers
+    
+    /** Regex to match preprocessor directives */
+    static final Pattern DIRECTIVE_REG = Pattern.compile("\\s*(?<=[.])([a-zA-Z_$])*");
+    
+    static final Pattern DIRECTIVE_ARG_REG = Pattern.compile("(?<=\\s)([0-9a-zA-Z.e+-_$])*");
     
     /** Regex to match instructions */
     static final Pattern INSCTUCTION_REG = Pattern.compile("([a-z]?[A-Z]?)*\\b"); //Matches instructions
@@ -199,8 +204,7 @@ public class Vmcompliler {
      */
     public static boolean isIdentifier(String line)
     {
-        Matcher m = IDENTIFIER_REG.matcher(line);
-        return m.find();
+        return IDENTIFIER_REG.matcher(line).find();
     }
     
     /**
@@ -210,8 +214,7 @@ public class Vmcompliler {
      */
     public static boolean isLabel(String line)
     {
-        Matcher m = LABEL_REG.matcher(line);
-        return m.find();
+        return LABEL_REG.matcher(line).find();
     }
     
     /**
@@ -221,8 +224,17 @@ public class Vmcompliler {
      */
     public static boolean isInstruction(String line)
     {
-        Matcher m = INSCTUCTION_REG.matcher(line);
-        return m.find();
+        return INSCTUCTION_REG.matcher(line).find();
+    }
+    
+    /**
+     * Tests whether the line is a preprocessor directive
+     * @param line
+     * @return 
+     */
+    public static boolean isDirective(String line)
+    {
+        return DIRECTIVE_REG.matcher(line).find();
     }
     
     /**
@@ -268,40 +280,65 @@ public class Vmcompliler {
         return m.group();
     }
     
+    public static String getDirective(String line)
+    {
+        Matcher m = DIRECTIVE_REG.matcher(line);
+        m.find();
+        return m.group();
+    }
+    
     /**
-     * Parses the line and returns a list of arguments
+     * Parses the line and returns the string of arguments
      * NOTE: This function MUST be used on an instruction line. Test with 
      * isInstruction first.
+     * @param command the string command for this instruction
      * @param line a line of source code
      * @return a list of arguments
      */
-    public static String[] getArgs(String command, String line)
+    public static String getArgs(String command, String line)
     {
         String s = line.replaceAll("\\s", ""); //Remove whitespace
         
         if (command.equals(s))
-        {
-            return new String[0];
-        }
+            return "";
         
         s = s.split(command + "\\s*")[1]; //Get string after command (instruction/identifier)
         
-        String[] args = ARGS_DELIM_REG.split(s); //Separate by comma  
+        return s;
+    }
+    
+    /**
+     * Splits the string of arguments into a list of arguments
+     * @param argstring the argument string
+     * @return list of arguments
+     */
+    public static String[] splitArgs(String argstring)
+    {
+        if (argstring.isEmpty())
+            return new String[0];
         
-        /*for (int i = 0; i < args.length; ++i)
-            System.out.print("'" + args[i] + "' ");*/
-        
-        return args;
+        return ARGS_DELIM_REG.split(argstring);
     }
     
     /**
      * Get the index of the variable, i.e. "$3" would return 3.
      * @param variable the variable string
-     * @return the index of the variable
+     * @return the index of the variable or null if the conversion was unsuccessful
      */
-    public static int getVarIndex(String variable)
+    public static Integer getVarIndex(String variable) throws NumberFormatException
     {
-        return Integer.parseInt(variable.substring(1, variable.length()));
+        Integer number;
+        
+        try
+        {
+            number = Integer.parseInt(variable.substring(1));
+        }
+        catch (NumberFormatException e)
+        {
+            throw new NumberFormatException();
+        }
+        
+        return number;
     }
     
     /**
@@ -345,7 +382,7 @@ public class Vmcompliler {
      * @param arg the argument to convert
      * @return the argtag used in the signature
      */
-    public static String getArgTag(String arg)
+    public static String getArgTag(String arg) throws NumberFormatException
     {
         String type = getType(arg);
                     
@@ -431,10 +468,13 @@ public class Vmcompliler {
         
         buff = new BufferedReader(reader);
         
-        HashMap<String, Integer> addressTable = new HashMap<>(20); //Mapping label strings to corresponding position
-        ArrayList<Jumps> locationTable = new ArrayList<>(40); //Maps the location of the jump address to the string
+        HashMap<String, Integer> addressTable = new HashMap<>(20); //Mapping label strings to corresponding address
+        ArrayList<Jumps> locationTable = new ArrayList<>(40); //Maps the location of the jump addresses to the string, so they can be found and replaced on the second parse
         
         ArrayList<Integer> binary = new ArrayList(); //List of opcodes
+        
+        HashMap<String, String> definitionTable = new HashMap<>(); //Maps preprocessor definitions to values
+        Set<String> definitionList = definitionTable.keySet(); //Set of preprocessor definitions 
         
         int wordCount = 0; //Cumulative total number of words used by opcodes, used when addressing labels
         
@@ -445,16 +485,58 @@ public class Vmcompliler {
             if (line == null)
                 break;
             
-            if (isIdentifier(line))
+            if (line.contains("#")) //Ignore comments
+                line = line.substring(0, line.indexOf("#"));
+            
+            if (isDirective(line))
+            {
+                String directive = getDirective(line);
+                
+                if (directive.equals("define"))
+                {
+                    Matcher m = DIRECTIVE_ARG_REG.matcher(line);
+                    
+                    //Get first argument, op1
+                    if (!m.find())
+                    {
+                        System.out.println("ERROR: Invalid preprocessor arguments in line '" + line + "'.");
+                        return;
+                    }
+                    
+                    String op1 = m.group();
+                    
+                    //Get second argument, op2
+                    if (!m.find())
+                    {
+                        System.out.println("ERROR: Invalid preprocessor arguments in line '" + line + "'.");
+                        return;
+                    }
+                    
+                    String op2 = m.group();
+                    
+                    //Add entry to table. Any ocurence of op1 within command arguments will be replaced with op2
+                    definitionTable.put(op1, op2);
+                    
+                    System.out.println("Directive: " + directive + " " + op1 + " " + op2);
+                }
+                else
+                {
+                    System.out.println("ERROR: Unknown preprocessor directive " + directive + " on line '" + line + "'.");
+                    return;
+                }
+                
+                
+            }
+            else if (isIdentifier(line))
             {
                 String identifier = getIdentifier(line);
                 
                 //Get variable number
-                String[] arguments = getArgs(identifier, line);
+                String[] arguments = splitArgs(getArgs(identifier, line));
                 
                 if (arguments.length != 1) //If the user has displayed too many args 
                 {
-                    System.err.println("Too many/few arguments in declaration. Declaration takes exactly one argument.");
+                    System.err.println("ERROR: Too many/few arguments in declaration. Declaration takes exactly one argument.");
                     return;
                 }
                 
@@ -462,11 +544,21 @@ public class Vmcompliler {
                 
                 if (!getType(variable).equals("v")) //If argument supplied is not a variable
                 {
-                    System.err.println("Argument must be a variable.");
+                    System.err.println("ERROR: Argument must be a variable.");
                     return;
                 }
                 
-                int index = getVarIndex(variable);
+                int index;
+                
+                try
+                {
+                    index = getVarIndex(variable);
+                }
+                catch (NumberFormatException e)
+                {
+                    System.out.println("ERROR: " + variable + " is not a valid number, in line '" + line + "'.");
+                    return;
+                }
                 
                 System.out.println("Declaration: " + identifier + " at index " + index);
                 
@@ -477,40 +569,56 @@ public class Vmcompliler {
                 }
                 
                 typeTable[index] = identifier;
-                
-                continue;
-            }
-            
-            if (isLabel(line))
+            } 
+            else if (isLabel(line))
             {
                 String label = getLabel(line);
                 
                 addressTable.put(label, wordCount);
                 
                 System.out.println("Label:       " + getLabel(line));
-                continue;
-            }
-            
-            if (isInstruction(line))
+            } 
+            else if (isInstruction(line))
             {
                 String instr = getInstruction(line);
-                String[] arguments = getArgs(instr, line);
+                String argumentString = getArgs(instr, line);
+                
+                
+                for (String s : definitionList)
+                {
+                    if (argumentString.contains(s))
+                    {
+                        argumentString = argumentString.replace(s, definitionTable.get(s));
+                    }
+
+                }
+                
+                String[] arguments = splitArgs(argumentString);
                 
                 String signature = instr; //Add the instruction name to the signature
                 
                 for (int i = 0; i < arguments.length; ++i) //Complete the signature by populating with argument tags
-                    signature += getArgTag(arguments[i]);
+                {
+                    try
+                    {
+                        signature += getArgTag(arguments[i]);
+                    }
+                    catch (NumberFormatException e)
+                    {
+                        System.out.println("ERROR: " + arguments[i] + " is not a valid number, in line '" + line + "'.");
+                        return;
+                    }
+                }
                 
                 if (!BYTECODE_TABLE.containsKey(signature))
                 {
-                    System.out.println("Unknown command signature (" + signature + ") in line '" + "'" + line);
+                    System.out.println("ERROR: Unknown command signature (" + signature + ") in line '" + line + "'.");
                     return;
                 }
                 
                 int bytecode = BYTECODE_TABLE.get(signature);
                 
                 binary.add(bytecode);
-                
                 
                 if (isJump(bytecode)) //If the instruction is a jump, add a placeholder argument which will be filled on the second parse
                 {
@@ -529,11 +637,31 @@ public class Vmcompliler {
                                 binary.add(getVarIndex(arguments[i]));
                                 break;
                             case "i":
-                                binary.add(Integer.parseInt(arguments[i]));
-                                break;
+                                {Integer number;
+                                try
+                                {
+                                    number = Integer.parseInt(arguments[i]);
+                                }
+                                catch (NumberFormatException e)
+                                {
+                                    System.out.println("ERROR: '" + arguments[i] + "' is not a valid number in line '" + line + "'.");
+                                    return;
+                                }
+                                binary.add(number);
+                                break;}
                             case "f":
-                                binary.add(floatToInt(Float.parseFloat(arguments[i])));
-                                break;
+                                {Float number;
+                                try
+                                {
+                                    number = Float.parseFloat(arguments[i]);
+                                }
+                                catch (NumberFormatException e)
+                                {
+                                    System.out.println("ERROR: '" + arguments[i] + "' is not a valid number in line '" + line + "'.");
+                                    return;
+                                }
+                                binary.add(floatToInt(number));
+                                break;}
                             default:
                                 break;
                         }
@@ -545,6 +673,8 @@ public class Vmcompliler {
             }
             
         }
+        
+        reader.close();
         
         System.out.println(locationTable);
         
@@ -562,7 +692,6 @@ public class Vmcompliler {
         
         System.out.println(display(binary));
             
-        reader.close();
     }
     
 }

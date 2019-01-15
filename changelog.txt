@@ -1,3 +1,7 @@
+Version 1.0.4
+    - Preprocessor added
+    - Exception handling
+
 Version 1.0.3
     - Compiler now accepts 0 argument instructions without error
 
