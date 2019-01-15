@@ -5,12 +5,12 @@
 
 .define i 1i
 
-float $1
-
 float $2
 
+float $3
+
 start:
-    add   3 , $2, pi   # ignore this
+    add   $3 , $2, pi   # ignore this
     nop
     external 1
 useless_label:

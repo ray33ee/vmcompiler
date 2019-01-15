@@ -1,3 +1,10 @@
+Version 1.0.5
+    - gitignore updated
+    - Project name corrected
+    - Javadocs updated
+    - Undeclared variables now caught
+    - Bytecode values now entered for instructions
+
 Version 1.0.4
     - Preprocessor added
     - Exception handling

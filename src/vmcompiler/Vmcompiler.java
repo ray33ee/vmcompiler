@@ -3,7 +3,7 @@
  * To change this template file, choose Tools | Templates
  * and open the template in the editor.
  */
-package vmcompliler;
+package vmcompiler;
 
 import java.io.*;
 import java.nio.ByteBuffer;
@@ -17,10 +17,7 @@ import java.util.regex.Pattern;
  *
  * @author Will
  */
-public class Vmcompliler {
-
-    /** Path to source file. Replace me with command line args later. */
-    static final String source = "E:\\Software Projects\\Java\\vmcompliler\\code.v";
+public class Vmcompiler {
     
     /** Regex to match label declarations */
     static final Pattern LABEL_REG = Pattern.compile("([a-zA-Z_$])*:"); //Matches label identifiers
@@ -43,7 +40,7 @@ public class Vmcompliler {
     static final Pattern VARIABLE_REG = Pattern.compile("[$]\\d++"); //Matches variables
     
     /** Regex to match type identifiers in variable declarations */
-    static final Pattern IDENTIFIER_REG = Pattern.compile("int|float|vec|ptr"); // Matches variable identifiers
+    static final Pattern IDENTIFIER_REG = Pattern.compile("int|float|vec|ptr|phys"); // Matches variable identifiers
     
     /** Regex to match the argument delimiter character, ',' */
     static final Pattern ARGS_DELIM_REG = Pattern.compile(",");
@@ -80,28 +77,25 @@ public class Vmcompliler {
         BYTECODE_TABLE.put("inc_vi", 0x0108);
        
         BYTECODE_TABLE.put("random_vi", 0x0109);
-        BYTECODE_TABLE.put("random_vf", 0x0109);
-        BYTECODE_TABLE.put("random_vv", 0x0109);
+        BYTECODE_TABLE.put("random_vf", 0x010A);
+        BYTECODE_TABLE.put("random_vv", 0x010B);
         
-        //NOTE: all three peeks should map to the same instruction, since type safety is not forced on peek function.
-        //Any signatures with the * wildcard will have multiple signatures map to the same instruction. FUnctions
-        //Marked with the * comment must share the same bytecode
-        BYTECODE_TABLE.put("peek_vi", 0x010A); //*
-        BYTECODE_TABLE.put("peek_vf", 0x010A);
-        BYTECODE_TABLE.put("peek_vv", 0x010A);
+        BYTECODE_TABLE.put("peek_vi", 0x010C); //*
+        BYTECODE_TABLE.put("peek_vf", 0x010C);
+        BYTECODE_TABLE.put("peek_vv", 0x010C);
         
-        BYTECODE_TABLE.put("push_vi", 0x010B); //*
-        BYTECODE_TABLE.put("push_vf", 0x010B);
-        BYTECODE_TABLE.put("push_vv", 0x010B);
+        BYTECODE_TABLE.put("push_vi", 0x010D); //*
+        BYTECODE_TABLE.put("push_vf", 0x010D);
+        BYTECODE_TABLE.put("push_vv", 0x010D);
         
-        BYTECODE_TABLE.put("push_li", 0x010B); //*
-        BYTECODE_TABLE.put("push_lf", 0x010B);
+        BYTECODE_TABLE.put("push_li", 0x010E); //*
+        BYTECODE_TABLE.put("push_lf", 0x010E);
         
-        BYTECODE_TABLE.put("pop_vi", 0x010E); //*
-        BYTECODE_TABLE.put("pop_vf", 0x010E);
-        BYTECODE_TABLE.put("pop_vv", 0x010E);
+        BYTECODE_TABLE.put("pop_vi", 0x010F); //*
+        BYTECODE_TABLE.put("pop_vf", 0x010F);
+        BYTECODE_TABLE.put("pop_vv", 0x010F);
         
-        BYTECODE_TABLE.put("start_vi", 0x0);
+        BYTECODE_TABLE.put("start_vi", 0x0110);
         
         /* Dual argument math instructions */
         BYTECODE_TABLE.put("sin_vf_vf", 0x0200);
@@ -126,70 +120,69 @@ public class Vmcompliler {
         BYTECODE_TABLE.put("store_vi_lf", 0x0241);
         
         BYTECODE_TABLE.put("store_vi_vi", 0x0242);
-        BYTECODE_TABLE.put("store_vi_vf", 0x0242);
-        BYTECODE_TABLE.put("store_vf_vi", 0x0242);
-        BYTECODE_TABLE.put("store_vf_vf", 0x0242);
-        BYTECODE_TABLE.put("store_vi_ii", 0x0242);
-        BYTECODE_TABLE.put("store_vf_if", 0x0242);
+        BYTECODE_TABLE.put("store_vi_vf", 0x0243);
+        BYTECODE_TABLE.put("store_vf_vi", 0x0244);
+        BYTECODE_TABLE.put("store_vf_vf", 0x0245);
+        BYTECODE_TABLE.put("store_vi_ii", 0x0246);
+        BYTECODE_TABLE.put("store_vf_if", 0x0247);
         
         BYTECODE_TABLE.put("store_v*_p", 0x0242); //Need to figure out if i really want/need pointers...
         
-        BYTECODE_TABLE.put("test_vv_vv", 0x0);
+        BYTECODE_TABLE.put("test_vv_vv", 0x0249);
         
-        BYTECODE_TABLE.put("cmp_vi_vi", 0x0243);
-        BYTECODE_TABLE.put("cmp_vi_vf", 0x0243);
-        BYTECODE_TABLE.put("cmp_vf_vi", 0x0243);
-        BYTECODE_TABLE.put("cmp_vf_vf", 0x0243);
+        BYTECODE_TABLE.put("cmp_vi_vi", 0x024A);
+        BYTECODE_TABLE.put("cmp_vi_vf", 0x024B);
+        BYTECODE_TABLE.put("cmp_vf_vi", 0x024C);
+        BYTECODE_TABLE.put("cmp_vf_vf", 0x024D);
         
-        BYTECODE_TABLE.put("cmp_vi_li", 0x0244);
-        BYTECODE_TABLE.put("cmp_vf_li", 0x0244);
-        BYTECODE_TABLE.put("cmp_vi_lf", 0x0245);
-        BYTECODE_TABLE.put("cmp_vf_lf", 0x0245);
+        BYTECODE_TABLE.put("cmp_vi_li", 0x024E);
+        BYTECODE_TABLE.put("cmp_vf_li", 0x024F);
+        BYTECODE_TABLE.put("cmp_vi_lf", 0x0250);
+        BYTECODE_TABLE.put("cmp_vf_lf", 0x0251);
         
-        BYTECODE_TABLE.put("stop_vi_vi", 0x0);
-       
+        BYTECODE_TABLE.put("stop_vi_vi", 0x0252);
         
         /* Triple argument math instructions */
         BYTECODE_TABLE.put("add_vi_vi_vi", 0x0300); //vari <-- vari + vari
-        BYTECODE_TABLE.put("add_vf_vf_vf", 0x0300); //vari <-- vari + varf
-        BYTECODE_TABLE.put("add_vv_vv_vv", 0x0300); //varv <-- varv + varv
+        BYTECODE_TABLE.put("add_vf_vf_vf", 0x0301); //vari <-- vari + varf
+        BYTECODE_TABLE.put("add_vv_vv_vv", 0x0302); //varv <-- varv + varv
         
-        BYTECODE_TABLE.put("add_vi_vi_li", 0x0300);
-        BYTECODE_TABLE.put("add_vf_vf_lf", 0x0300);
+        BYTECODE_TABLE.put("add_vi_vi_li", 0x0303);
+        BYTECODE_TABLE.put("add_vf_vf_lf", 0x0304);
         
-        BYTECODE_TABLE.put("sub_vi_vi_vi", 0x0300);
-        BYTECODE_TABLE.put("sub_vf_vf_vf", 0x0300);
-        BYTECODE_TABLE.put("sub_vv_vv_vv", 0x0300);
+        BYTECODE_TABLE.put("sub_vi_vi_vi", 0x0305);
+        BYTECODE_TABLE.put("sub_vf_vf_vf", 0x0306);
+        BYTECODE_TABLE.put("sub_vv_vv_vv", 0x0307);
         
-        BYTECODE_TABLE.put("sub_vi_vi_li", 0x0300);
-        BYTECODE_TABLE.put("sub_vf_vf_lf", 0x0300);
+        BYTECODE_TABLE.put("sub_vi_vi_li", 0x0308);
+        BYTECODE_TABLE.put("sub_vf_vf_lf", 0x0309);
         
-        BYTECODE_TABLE.put("sub_vi_li_vi", 0x0300);
-        BYTECODE_TABLE.put("sub_vf_lf_vf", 0x0300);     
+        BYTECODE_TABLE.put("sub_vi_li_vi", 0x030A);
+        BYTECODE_TABLE.put("sub_vf_lf_vf", 0x030B);     
         
-        BYTECODE_TABLE.put("mul_vi_vi_vi", 0x0300);
-        BYTECODE_TABLE.put("mul_vf_vf_vf", 0x0300);
+        BYTECODE_TABLE.put("mul_vi_vi_vi", 0x030C);
+        BYTECODE_TABLE.put("mul_vf_vf_vf", 0x030D);
         
-        BYTECODE_TABLE.put("mul_vv_vv_vf", 0x0300);
-        BYTECODE_TABLE.put("mul_vv_vv_lf", 0x0300);
+        BYTECODE_TABLE.put("mul_vv_vv_vf", 0x030E);
+        BYTECODE_TABLE.put("mul_vv_vv_lf", 0x030F);
         
-        BYTECODE_TABLE.put("mul_vi_vi_li", 0x0300);
-        BYTECODE_TABLE.put("mul_vf_vf_lf", 0x0300);
+        BYTECODE_TABLE.put("mul_vi_vi_li", 0x0310);
+        BYTECODE_TABLE.put("mul_vf_vf_lf", 0x0311);
         
-        BYTECODE_TABLE.put("div_vi_vi_vi", 0x030B);
-        BYTECODE_TABLE.put("div_vi_vi_li", 0x030C);
-        BYTECODE_TABLE.put("div_vi_li_vi", 0x030C);
+        BYTECODE_TABLE.put("div_vi_vi_vi", 0x0312);
+        BYTECODE_TABLE.put("div_vi_vi_li", 0x0313);
+        BYTECODE_TABLE.put("div_vi_li_vi", 0x0314);
         
-        BYTECODE_TABLE.put("div_vf_vf_vf", 0x030D);
-        BYTECODE_TABLE.put("div_vf_vf_lf", 0x030E);
-        BYTECODE_TABLE.put("div_vf_lf_vf", 0x030E);
+        BYTECODE_TABLE.put("div_vf_vf_vf", 0x0315);
+        BYTECODE_TABLE.put("div_vf_vf_lf", 0x0316);
+        BYTECODE_TABLE.put("div_vf_lf_vf", 0x0317);
         
-        BYTECODE_TABLE.put("div_vv_vv_vf", 0x030D);
-        BYTECODE_TABLE.put("div_vv_vv_lf", 0x030E);
+        BYTECODE_TABLE.put("div_vv_vv_vf", 0x0318);
+        BYTECODE_TABLE.put("div_vv_vv_lf", 0x0319);
         
-        BYTECODE_TABLE.put("pow_vf_vf_vf", 0x0310);
-        BYTECODE_TABLE.put("pow_vf_vf_lf", 0x0312);
-        BYTECODE_TABLE.put("pow_vf_lf_vf", 0x0312);
+        BYTECODE_TABLE.put("pow_vf_vf_vf", 0x031A);
+        BYTECODE_TABLE.put("pow_vf_vf_lf", 0x031B);
+        BYTECODE_TABLE.put("pow_vf_lf_vf", 0x031C);
         
         /* Triple argument non-math functions */
         BYTECODE_TABLE.put("store_vv_lf_lf", 0x0340);
@@ -280,6 +273,13 @@ public class Vmcompliler {
         return m.group();
     }
     
+    /**
+     * Parses the line and returns the directive string
+     * NOTE: This function MUST be used on a directive line. Test with 
+     * isDiurective first.
+     * @param line a line of source code
+     * @return the direective string
+     */
     public static String getDirective(String line)
     {
         Matcher m = DIRECTIVE_REG.matcher(line);
@@ -382,22 +382,30 @@ public class Vmcompliler {
      * @param arg the argument to convert
      * @return the argtag used in the signature
      */
-    public static String getArgTag(String arg) throws NumberFormatException
+    public static String getArgTag(String arg) throws NumberFormatException, IllegalArgumentException
     {
         String type = getType(arg);
-                    
+        
         if (type.equals("v"))
-            return "_v" + getCharIdentifier(typeTable[getVarIndex(arg)]);
+        {
+            String typ = typeTable[getVarIndex(arg)];
+            
+            if (typ == null) //if typ is null, there is no entry in the table for the variable, which means it wasn't declared
+                throw new IllegalArgumentException();
+            
+            return "_v" + getCharIdentifier(typ);
+        }
         else
             return "_l" + type;
     }
     
     /**
-     * Determines whether an instruction is a jump or not
+     * Determines whether an instruction uses an address, i.e. a label. If it does,
+     * on the second parse the label string is replaced with an address to the label location
      * @param bytecode the instruction to test
      * @return true if the instruction is a jump
      */
-    public static boolean isJump(int bytecode)
+    public static boolean usesAddress(int bytecode)
     {
         return bytecode >= 0x0100 && bytecode < 0x0105;
     }
@@ -450,19 +458,24 @@ public class Vmcompliler {
      * @param args the command line arguments
      */
     public static void main(String[] args) throws IOException {
-        
         BufferedReader buff;
         FileReader reader;
         
         String line;
         
+        if (args.length == 0)
+        {
+            System.out.println("ERROR: No command line argument supplied.");
+            return;
+        }
+        
         try
         {
-            reader = new FileReader(source);
+            reader = new FileReader(args[0]);
         }
         catch (FileNotFoundException e)
         {
-            System.out.println("Could not find the specified file " + e.getMessage());
+            System.out.println("ERROR: Could not find the specified file " + e.getMessage());
             return;
         }
         
@@ -517,7 +530,7 @@ public class Vmcompliler {
                     //Add entry to table. Any ocurence of op1 within command arguments will be replaced with op2
                     definitionTable.put(op1, op2);
                     
-                    System.out.println("Directive: " + directive + " " + op1 + " " + op2);
+                    System.out.println("Directive:   " + directive + " " + op1 + " " + op2);
                 }
                 else
                 {
@@ -560,13 +573,13 @@ public class Vmcompliler {
                     return;
                 }
                 
-                System.out.println("Declaration: " + identifier + " at index " + index);
-                
                 if (typeTable[index] != null)
                 {
                     System.out.println("ERROR: $" + index + " has already been defined as " + typeTable[index]);
                     return;
                 }
+                
+                System.out.println("Declaration: " + identifier + " at register " + index);
                 
                 typeTable[index] = identifier;
             } 
@@ -601,7 +614,19 @@ public class Vmcompliler {
                 {
                     try
                     {
-                        signature += getArgTag(arguments[i]);
+                        String argtag;
+                        
+                        try
+                        {
+                            argtag = getArgTag(arguments[i]);
+                        }
+                        catch (IllegalArgumentException e)
+                        {
+                            System.out.println("ERROR: No declaration for variable '" + arguments[i] + "'.");
+                            return;
+                        }
+                        
+                        signature += argtag;
                     }
                     catch (NumberFormatException e)
                     {
@@ -620,7 +645,7 @@ public class Vmcompliler {
                 
                 binary.add(bytecode);
                 
-                if (isJump(bytecode)) //If the instruction is a jump, add a placeholder argument which will be filled on the second parse
+                if (usesAddress(bytecode)) //If the instruction is a jump, add a placeholder argument which will be filled on the second parse
                 {
                     binary.add(0x0);   
 
